@@ -3,7 +3,6 @@ import PyPDF2
 import os
 from werkzeug.utils import secure_filename
 from PIL import Image
-import img2pdf
 from PyPDF2 import PdfReader, PdfWriter
 import io
 
@@ -116,27 +115,43 @@ def images_to_pdf():
         return 'No files uploaded', 400
     
     files = request.files.getlist('files')
-    image_paths = []
+    if not files or files[0].filename == '':
+        return 'No selected files', 400
     
-    # Save and process images
+    # Create a PDF writer
+    pdf_writer = PdfWriter()
+    
     for file in files:
         if file.filename:
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
+            # Read the image
+            image = Image.open(file)
             
             # Convert image to RGB if necessary
-            with Image.open(filepath) as img:
-                if img.mode != 'RGB':
-                    rgb_img = img.convert('RGB')
-                    rgb_img.save(filepath)
+            if image.mode != 'RGB':
+                image = image.convert('RGB')
             
-            image_paths.append(filepath)
+            # Save the image temporarily
+            temp_path = os.path.join(app.config['UPLOAD_FOLDER'], 'temp.jpg')
+            image.save(temp_path, 'JPEG')
+            
+            # Convert the image to PDF
+            image_pdf = Image.open(temp_path)
+            pdf_bytes = io.BytesIO()
+            image_pdf.save(pdf_bytes, format='PDF')
+            pdf_bytes.seek(0)
+            
+            # Add the PDF to the writer
+            pdf_reader = PdfReader(pdf_bytes)
+            for page in pdf_reader.pages:
+                pdf_writer.add_page(page)
+            
+            # Clean up temporary file
+            os.remove(temp_path)
     
-    # Convert images to PDF
-    output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'converted_images.pdf')
-    with open(output_path, "wb") as f:
-        f.write(img2pdf.convert(image_paths))
+    # Save the final PDF
+    output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'converted.pdf')
+    with open(output_path, 'wb') as output_file:
+        pdf_writer.write(output_file)
     
     return send_file(output_path, as_attachment=True)
 
