@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compress PDF - PDF Tools Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="container mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <a href="{{ url_for('index') }}" class="text-blue-600 font-bold text-xl">
+                    <i class="fas fa-home mr-2"></i>Home
+                </a>
+                <h1 class="text-2xl font-semibold">Compress PDF</h1>
+                <div></div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Guide Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">How to Compress PDF</h2>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                <li>Upload your PDF file</li>
+                <li>Click "Compress PDF" button</li>
+                <li>Download your compressed PDF</li>
+            </ol>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <form action="/compress" method="post" enctype="multipart/form-data">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Select PDF file to compress</label>
+                    <input type="file" name="file" accept=".pdf" 
+                           class="w-full p-2 border rounded" id="pdfInput"
+                           onchange="handleFileSelect(this)">
+                </div>
+                <button type="submit" 
+                        class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700
+                               transition duration-300">
+                    Compress PDF
+                </button>
+            </form>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Preview</h3>
+            <div id="previewContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // Same preview script as split.html
+    </script>
+</body>
+</html> 

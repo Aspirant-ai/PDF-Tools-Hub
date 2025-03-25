@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PDF Tools Hub{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-gradient:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .tool-button {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            transition: all 0.3s ease;
+        }
+        .tool-button:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+            transform: translateY(-2px);
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Fixed Navbar -->
+    <nav class="fixed top-0 left-0 right-0 bg-white shadow-lg z-50">
+        <div class="container mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <a href="{{ url_for('index') }}" class="text-2xl font-bold gradient-text">
+                    <i class="fas fa-file-pdf text-blue-600 mr-2"></i>PDF Tools Hub
+                </a>
+                <div class="hidden md:flex space-x-6">
+                    <a href="{{ url_for('merge_tool') }}" class="text-gray-700 hover:text-blue-600 transition">Merge</a>
+                    <a href="{{ url_for('split_tool') }}" class="text-gray-700 hover:text-blue-600 transition">Split</a>
+                    <a href="{{ url_for('compress_tool') }}" class="text-gray-700 hover:text-blue-600 transition">Compress</a>
+                    <a href="{{ url_for('images_tool') }}" class="text-gray-700 hover:text-blue-600 transition">Images to PDF</a>
+                    <a href="{{ url_for('reorder_tool') }}" class="text-gray-700 hover:text-blue-600 transition">Reorder</a>
+                </div>
+                <button class="md:hidden" id="mobile-menu-button">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div class="md:hidden hidden" id="mobile-menu">
+                <div class="px-2 pt-2 pb-3 space-y-1">
+                    <a href="{{ url_for('merge_tool') }}" class="block px-3 py-2 text-gray-700 hover:text-blue-600">Merge</a>
+                    <a href="{{ url_for('split_tool') }}" class="block px-3 py-2 text-gray-700 hover:text-blue-600">Split</a>
+                    <a href="{{ url_for('compress_tool') }}" class="block px-3 py-2 text-gray-700 hover:text-blue-600">Compress</a>
+                    <a href="{{ url_for('images_tool') }}" class="block px-3 py-2 text-gray-700 hover:text-blue-600">Images to PDF</a>
+                    <a href="{{ url_for('reorder_tool') }}" class="block px-3 py-2 text-gray-700 hover:text-blue-600">Reorder</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow mt-16">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Fixed Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-auto">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">PDF Tools Hub</h3>
+                    <p class="text-gray-400">Your one-stop solution for all PDF operations</p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="{{ url_for('merge_tool') }}" class="text-gray-400 hover:text-white">Merge PDFs</a></li>
+                        <li><a href="{{ url_for('split_tool') }}" class="text-gray-400 hover:text-white">Split PDF</a></li>
+                        <li><a href="{{ url_for('compress_tool') }}" class="text-gray-400 hover:text-white">Compress PDF</a></li>
+                        <li><a href="{{ url_for('images_tool') }}" class="text-gray-400 hover:text-white">Images to PDF</a></li>
+                        <li><a href="{{ url_for('reorder_tool') }}" class="text-gray-400 hover:text-white">Reorder Pages</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Contact</h3>
+                    <p class="text-gray-400">Email: support@pdftoolshub.com</p>
+                    <div class="flex space-x-4 mt-4">
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 PDF Tools Hub. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

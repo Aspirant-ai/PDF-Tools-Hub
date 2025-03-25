@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Merge PDFs - PDF Tools Hub{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Guide Section -->
+    <div class="card-gradient rounded-xl p-6 mb-8">
+        <h2 class="text-2xl font-bold mb-4 gradient-text">How to Merge PDFs</h2>
+        <ol class="list-decimal list-inside space-y-3 text-gray-700">
+            <li>Click "Select Files" or drag and drop PDF files</li>
+            <li>Arrange the files in desired order</li>
+            <li>Click "Merge PDFs" button</li>
+            <li>Download your merged PDF</li>
+        </ol>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="card-gradient rounded-xl p-6 mb-8">
+        <form action="/merge" method="post" enctype="multipart/form-data" id="mergeForm">
+            <div class="mb-6">
+                <label class="block text-gray-700 text-lg font-semibold mb-2">Select PDF files to merge</label>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors duration-300" 
+                     id="dropZone">
+                    <input type="file" name="files" multiple accept=".pdf" 
+                           class="hidden" id="pdfInput"
+                           onchange="handleFileSelect(this)">
+                    <label for="pdfInput" class="cursor-pointer">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-600">Drag and drop files here or click to browse</p>
+                    </label>
+                </div>
+                <div id="fileList" class="mt-4 space-y-2"></div>
+            </div>
+            <button type="submit" 
+                    class="tool-button text-white px-8 py-3 rounded-lg w-full text-lg font-semibold hover:shadow-lg transition-all duration-300"
+                    id="submitBtn">
+                <span class="normal-state">
+                    <i class="fas fa-object-group mr-2"></i>Merge PDFs
+                </span>
+                <span class="loading-state hidden">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>Processing...
+                </span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="card-gradient rounded-xl p-6">
+        <h3 class="text-xl font-semibold mb-4 gradient-text">Preview</h3>
+        <div id="previewContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div id="progressBar" class="fixed bottom-0 left-0 w-full bg-gray-200 hidden">
+        <div class="bg-blue-600 h-2 transition-all duration-300" style="width: 0%" id="progressFill"></div>
+        <div class="text-center text-sm text-gray-600 py-1" id="progressText">0%</div>
+    </div>
+
+    <!-- Error Toast -->
+    <div id="errorToast" class="fixed top-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg hidden transform transition-transform duration-300">
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <p id="errorMessage"></p>
+        </div>
+        <button class="absolute top-2 right-2 text-white hover:text-gray-200" onclick="hideError()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+<script>
+    // Initialize PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+
+    // File size validation
+    function validateFileSize(file) {
+        const maxSize = 16 * 1024 * 1024; // 16MB
+        if (file.size > maxSize) {
+            showError(`File ${file.name} is too large. Maximum size is 16MB.`);
+            return false;
+        }
+        return true;
+    }
+
+    // Show error message
+    function showError(message) {
+        const toast = document.getElementById('errorToast');
+        const messageEl = document.getElementById('errorMessage');
+        messageEl.textContent = message;
+        toast.classList.remove('hidden');
+        setTimeout(hideError, 5000);
+    }
+
+    // Hide error message
+    function hideError() {
+        document.getElementById('errorToast').classList.add('hidden');
+    }
+
+    // Handle file selection
+    async function handleFileSelect(input) {
+        const container = document.getElementById('previewContainer');
+        const fileList = document.getElementById('fileList');
+        container.innerHTML = '';
+        fileList.innerHTML = '';
+
+        const files = Array.from(input.files);
+        let validFiles = true;
+
+        // Validate all files first
+        for (const file of files) {
+            if (!validateFileSize(file)) {
+                validFiles = false;
+                break;
+            }
+        }
+
+        if (!validFiles) {
+            input.value = '';
+            return;
+        }
+
+        // Process valid files
+        for (const [index, file] of files.entries()) {
+            // Add to file list
+            const fileItem = document.createElement('div');
+            fileItem.className = 'flex items-center justify-between bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors duration-300';
+            fileItem.innerHTML = `
+                <span class="text-sm font-medium">${file.name}</span>
+                <span class="text-xs text-gray-500">${formatFileSize(file.size)}</span>
+            `;
+            fileList.appendChild(fileItem);
+
+            // Create preview
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdfData = new Uint8Array(arrayBuffer);
+                
+                // Load the PDF document
+                const loadingTask = pdfjsLib.getDocument({data: pdfData});
+                const pdf = await loadingTask.promise;
+                
+                // Get the first page
+                const page = await pdf.getPage(1);
+                
+                // Create canvas with proper dimensions
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                
+                // Get the viewport at 1.5 scale for better quality
+                const viewport = page.getViewport({scale: 1.5});
+                
+                // Set canvas dimensions
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                // Render PDF page to canvas
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport,
+                    enableWebGL: true,
+                    renderInteractiveForms: true
+                };
+
+                await page.render(renderContext).promise;
+
+                // Create preview container
+                const div = document.createElement('div');
+                div.className = 'bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300';
+                
+                // Add page count
+                const pageCount = pdf.numPages;
+                
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="text-sm text-gray-500 font-medium">File ${index + 1}</div>
+                        <div class="text-xs text-gray-400">${pageCount} page${pageCount > 1 ? 's' : ''}</div>
+                    </div>
+                    <div class="border rounded-lg overflow-hidden bg-white">
+                        <canvas class="w-full h-auto"></canvas>
+                    </div>
+                `;
+                
+                // Add the canvas to the container
+                const previewCanvas = div.querySelector('canvas');
+                previewCanvas.width = canvas.width;
+                previewCanvas.height = canvas.height;
+                previewCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                
+                container.appendChild(div);
+            } catch (error) {
+                console.error('Error processing PDF:', error);
+                showError(`Error processing ${file.name}: ${error.message}`);
+            }
+        }
+    }
+
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Handle drag and drop
+    const dropZone = document.getElementById('dropZone');
+    const pdfInput = document.getElementById('pdfInput');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        dropZone.classList.add('border-blue-500', 'bg-blue-50');
+    }
+
+    function unhighlight(e) {
+        dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+    }
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        pdfInput.files = files;
+        handleFileSelect(pdfInput);
+    }
+
+    // Handle form submission
+    document.getElementById('mergeForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitBtn');
+        const normalState = submitBtn.querySelector('.normal-state');
+        const loadingState = submitBtn.querySelector('.loading-state');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        // Show loading state
+        normalState.classList.add('hidden');
+        loadingState.classList.remove('hidden');
+        progressBar.classList.remove('hidden');
+        submitBtn.disabled = true;
+
+        // Simulate progress (replace with actual progress tracking)
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 5;
+            progressFill.style.width = `${progress}%`;
+            progressText.textContent = `${progress}%`;
+            if (progress >= 100) {
+                clearInterval(interval);
+                // Reset form after successful submission
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    normalState.classList.remove('hidden');
+                    loadingState.classList.add('hidden');
+                    progressBar.classList.add('hidden');
+                    progressFill.style.width = '0%';
+                    progressText.textContent = '0%';
+                    document.getElementById('mergeForm').reset();
+                    document.getElementById('previewContainer').innerHTML = '';
+                    document.getElementById('fileList').innerHTML = '';
+                }, 1000);
+            }
+        }, 200);
+    });
+</script>
+{% endblock %} 
